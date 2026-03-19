@@ -1,0 +1,14 @@
+services:
+  cdn-service:
+    image: cdn-service:1.0.0
+    container_name: cdn-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      JWT_SECRET: secret
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
