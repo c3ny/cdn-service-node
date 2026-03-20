@@ -1,19 +1,14 @@
-FROM node AS development
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-COPY package.json  ./
-COPY package-lock.json  ./
-
-RUN npm i
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
+RUN npm run build
+RUN npm prune --omit=dev
 
-ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 8080
 
-EXPOSE 3005
-
-CMD ["npm", "run", "start"]
+CMD ["node", "dist/main"]
