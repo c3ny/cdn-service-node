@@ -1,6 +1,6 @@
 {
   "name": "cdn-service",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CDN Service - Upload e gerenciamento de imagens via Cloudinary",
   "author": "",
   "private": true,
