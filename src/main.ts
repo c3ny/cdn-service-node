@@ -57,4 +57,4 @@ async function bootstrap() {
   console.log(`CDN Service running on port ${port}`);
 }
 
-bootstrap();
+void bootstrap();

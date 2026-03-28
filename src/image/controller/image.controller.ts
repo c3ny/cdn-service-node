@@ -3,11 +3,13 @@ import {
   Post,
   Delete,
   Param,
+  ParseFilePipe,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   Query,
   HttpCode,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -58,7 +60,8 @@ export class ImageController {
   @ApiResponse({ status: 400, type: ErrorResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async upload(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
+    file: Express.Multer.File,
     @Query('folder') folder: string = 'general',
   ): Promise<UploadResponseDto> {
     return this.imageService.upload(file, folder);
@@ -80,6 +83,9 @@ export class ImageController {
   async delete(
     @Param('publicId') publicId: string,
   ): Promise<DeleteResponseDto> {
+    if (!publicId.startsWith('sangue-solidario/')) {
+      throw new BadRequestException('Invalid image identifier');
+    }
     await this.imageService.delete(publicId);
     return { message: 'Image deleted successfully' };
   }

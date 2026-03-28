@@ -26,9 +26,7 @@ export class ImageService {
     const result = await this.cloudinaryService.deleteImage(publicId);
 
     if (result.result !== 'ok') {
-      throw new BadRequestException(
-        `Failed to delete image: ${result.result}`,
-      );
+      throw new BadRequestException(`Failed to delete image: ${result.result}`);
     }
   }
 }
