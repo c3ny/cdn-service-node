@@ -1,19 +1,26 @@
-FROM node AS development
+# Stage 1 — build
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-COPY package.json  ./
-COPY package-lock.json  ./
-
-RUN npm i
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
+RUN npm run build
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Stage 2 — production
+FROM node:22-alpine AS production
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3005
 
-CMD ["npm", "run", "start"]
+USER node
+
+CMD ["node", "dist/main"]

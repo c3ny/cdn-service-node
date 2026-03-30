@@ -44,8 +44,7 @@ export class CloudinaryService {
           result: UploadApiResponse | undefined,
         ) => {
           if (error) return reject(new BadRequestException(error.message));
-          if (!result)
-            return reject(new BadRequestException('Upload failed'));
+          if (!result) return reject(new BadRequestException('Upload failed'));
           resolve(result);
         },
       );
@@ -56,8 +55,9 @@ export class CloudinaryService {
 
   async deleteImage(publicId: string): Promise<{ result: string }> {
     return new Promise((resolve, reject) => {
-      cloudinary.uploader.destroy(publicId, (error, result) => {
-        if (error) return reject(new BadRequestException(error.message));
+      void cloudinary.uploader.destroy(publicId, (error, result) => {
+        if (error)
+          return reject(new BadRequestException((error as Error).message));
         resolve(result as { result: string });
       });
     });
