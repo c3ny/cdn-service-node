@@ -1,6 +1,6 @@
 {
   "name": "cdn-service",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "CDN Service - Upload e gerenciamento de imagens via Cloudinary",
   "author": "",
   "private": true,
@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@logtail/pino": "^0.5.8",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
@@ -32,6 +33,7 @@
     "multer": "^2.1.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pino": "^10.3.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
