@@ -3,34 +3,69 @@ name: CD
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - development
 
 jobs:
   deploy:
-    name: Deploy to Heroku
     runs-on: ubuntu-latest
+
     steps:
-      - name: Install Heroku CLI
+      # 📥 Checkout
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 🏷️ Versão
+      - name: Obter versão da tag
+        run: |
+          git fetch --tags
+          VERSION=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      # 🔐 Login Docker Hub
+      - name: Login Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 🐳 Build e push (igual antes)
+      - name: Build e push
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }} .
+
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }}
+
+      # 🔽 PULL da imagem pronta (do Docker Hub)
+      - name: Pull da imagem
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }}
+
+      # 🔐 Login no Heroku Registry
+      - name: Login Heroku Container Registry
+        run: |
+          echo ${{ secrets.HEROKU_API_KEY }} | docker login \
+            --username=_ \
+            --password-stdin registry.heroku.com
+
+      # 🔁 TAG para Heroku
+      - name: Tag imagem para Heroku
+        run: |
+          docker tag \
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }} \
+            registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
+
+      # 🚀 PUSH para Heroku
+      - name: Push para Heroku
+        run: |
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
+
+      # 📦 Release
+      - name: Release no Heroku
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy Docker image to Heroku
-        uses: gonuit/heroku-docker-deploy@v1.3.3
-        with:
-          email: ${{ secrets.HEROKU_EMAIL }}
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
-          dockerfile_directory: .
-          dockerfile_name: Dockerfile
-          process_type: web
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
