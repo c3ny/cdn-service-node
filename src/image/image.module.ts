@@ -5,6 +5,7 @@ import { ImageController } from './controller/image.controller.js';
 import { ImageService } from './service/image.service.js';
 import { JwtStrategy } from './guards/jwt.strategy.js';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module.js';
+import { AppLoggerService } from '../shared/logger/app-logger.service.js';
 
 @Module({
   imports: [
@@ -15,6 +16,10 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module.js';
     }),
   ],
   controllers: [ImageController],
-  providers: [ImageService, JwtStrategy],
+  providers: [
+    { provide: AppLoggerService, useFactory: () => new AppLoggerService('cdn-service') },
+    ImageService,
+    JwtStrategy,
+  ],
 })
 export class ImageModule {}
