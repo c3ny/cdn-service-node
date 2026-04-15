@@ -25,9 +25,11 @@ import {
 import { ImageService } from '../service/image.service.js';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard.js';
 import {
+  UploadQueryDto,
   UploadResponseDto,
   DeleteResponseDto,
   ErrorResponseDto,
+  isSafePublicId,
 } from '../dto/upload-response.dto.js';
 
 @ApiTags('Images')
@@ -37,7 +39,11 @@ export class ImageController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('image', { storage: undefined }))
+  @UseInterceptors(
+    FileInterceptor('image', {
+      limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    }),
+  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Upload an image to Cloudinary' })
   @ApiConsumes('multipart/form-data')
@@ -62,8 +68,9 @@ export class ImageController {
   async upload(
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
     file: Express.Multer.File,
-    @Query('folder') folder: string = 'general',
+    @Query() query: UploadQueryDto,
   ): Promise<UploadResponseDto> {
+    const folder = query.folder ?? 'general';
     return this.imageService.upload(file, folder);
   }
 
@@ -83,7 +90,7 @@ export class ImageController {
   async delete(
     @Param('publicId') publicId: string,
   ): Promise<DeleteResponseDto> {
-    if (!publicId.startsWith('sangue-solidario/')) {
+    if (!isSafePublicId(publicId) || !publicId.startsWith('sangue-solidario/')) {
       throw new BadRequestException('Invalid image identifier');
     }
     await this.imageService.delete(publicId);

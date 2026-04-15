@@ -4,6 +4,10 @@ import {
   UploadApiResponse,
   UploadApiErrorResponse,
 } from 'cloudinary';
+import fileTypeChecker from 'file-type-checker';
+import { isSafeFolder } from '../image/dto/upload-response.dto.js';
+
+type DetectedFileInfo = { extension?: string; mimeType?: string };
 
 @Injectable()
 export class CloudinaryService {
@@ -12,6 +16,8 @@ export class CloudinaryService {
     'image/png',
     'image/webp',
   ];
+
+  private readonly ALLOWED_EXTENSIONS = ['jpeg', 'jpg', 'png', 'webp'];
 
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (same as Kotlin version)
 
@@ -31,6 +37,20 @@ export class CloudinaryService {
 
     if (file.size > this.MAX_FILE_SIZE) {
       throw new BadRequestException('File size exceeds 10MB limit');
+    }
+
+    const detected = fileTypeChecker.detectFile(
+      file.buffer,
+    ) as DetectedFileInfo | undefined;
+    const extension = detected?.extension?.toLowerCase();
+    if (!extension || !this.ALLOWED_EXTENSIONS.includes(extension)) {
+      throw new BadRequestException(
+        'Unsupported image content (magic bytes mismatch)',
+      );
+    }
+
+    if (!isSafeFolder(folder)) {
+      throw new BadRequestException('Invalid folder parameter');
     }
 
     return new Promise<UploadApiResponse>((resolve, reject) => {

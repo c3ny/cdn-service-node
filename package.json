@@ -30,6 +30,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.4",
     "cloudinary": "^2.9.0",
+    "file-type-checker": "^1.1.6",
     "multer": "^2.1.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
