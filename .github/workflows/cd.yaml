@@ -9,26 +9,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 📥 Checkout
+      # Checkout
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 🏷️ Versão
+      # Versão
       - name: Obter versão da tag
         run: |
           git fetch --tags
           VERSION=$(git describe --tags --abbrev=0 || echo "v0.0.0")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+      # Sonar Qube Scanner
+      - name: SonarQube
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.sources=src
 
-      # 🔐 Login Docker Hub
+      # Login Docker Hub
       - name: Login Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 🐳 Build e push (igual antes)
+      # Build e push (igual antes)
       - name: Build e push
         run: |
           docker build \
@@ -38,31 +51,32 @@ jobs:
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }}
 
-      # 🔽 PULL da imagem pronta (do Docker Hub)
+      # PULL da imagem pronta (do Docker Hub)
       - name: Pull da imagem
         run: |
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }}
 
-      # 🔐 Login no Heroku Registry
+      # Login no Heroku Registry
       - name: Login Heroku Container Registry
         run: |
           echo ${{ secrets.HEROKU_API_KEY }} | docker login \
             --username=_ \
             --password-stdin registry.heroku.com
 
-      # 🔁 TAG para Heroku
+      # TAG para Heroku
       - name: Tag imagem para Heroku
         run: |
           docker tag \
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:${{ env.VERSION }} \
             registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
 
-      # 🚀 PUSH para Heroku
+      # PUSH para Heroku
       - name: Push para Heroku
         run: |
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
+      
 
-      # 📦 Release
+      # Release
       - name: Release no Heroku
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
